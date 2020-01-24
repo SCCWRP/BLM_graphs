@@ -1,20 +1,10 @@
-setwd('/Users/itlender/Projects/BLM_graphs/')
 library(tidyverse)
 library(ggplot2)
 library(plotly)
 library(readxl)
 library(beeswarm)
-blm_data <- read.csv("FW BLM Database deliverable_012220.csv") %>%
-  dplyr::mutate_if(is.factor, as.character) %>%
-  dplyr::mutate(
-    FractionName = dplyr::case_when(
-      FractionName %in% c("None","Dissolved","Total","Not Recorded","Filtered") ~ FractionName,
-      TRUE ~ NA_character_
-    )
-  )
-
-blm_cats <- read.csv("BLM_Category_table_FINAL.csv")
-
+load("data/blm_cats") # BLM Category Table
+load("data/blm_data") # BLM Data
 copper <- blm_data %>% dplyr::filter(Analyte == "Copper, Total")
 
 # separate to two groups to simulate two ecoregions
@@ -83,17 +73,17 @@ test <- p + geom_jitter(
     #aes(size = NearStreamDistance)
     aes(color = Category, size = NearStreamDistance)
   ) +
-  # geom_boxplot(
-  #  color = '#000066',
-  #  alpha = 0.05,
-  #  outlier.shape = NA,
-  #  outlier.colour = 'black'
-  # ) + 
-  geom_violin(
-    alpha = 0.7,
-    draw_quantiles = c(0.1,0.25,0.5,0.75,0.9),
-    linetype = 'solid'
-  ) +
+  geom_boxplot(
+  color = '#000066',
+  alpha = 0.5,
+  outlier.shape = NA,
+  outlier.colour = 'black'
+  ) + 
+  # geom_violin(
+  #   alpha = 0.7,
+  #   draw_quantiles = c(0.1,0.25,0.5,0.75,0.9),
+  #   linetype = 'solid'
+  # ) +
   geom_segment(
     x = 0.65, xend = 1.35, y = 45, yend = 45,
     color = 'red',linetype = 'dashed'
