@@ -48,17 +48,7 @@ copper_no_outliers <- copper %>%
     !is.na(Result)
   )
 
-copper_10to90 <- copper %>%
-  dplyr::mutate(
-    Result = dplyr::case_when(
-      Result < `10th percentile` ~ NA_real_,
-      Result > `90th percentile` ~ NA_real_,
-      TRUE ~ Result
-    )
-  ) %>%
-  dplyr::filter(
-    !is.na(Result)
-  )
+
 
 
 copper_results_g1 = copper[which(copper$group == 'group1'),]$Result
@@ -66,24 +56,23 @@ copper_results_g2 = copper[which(copper$group == 'group2'),]$Result
 
 p <- ggplot(copper_no_outliers, aes(x=group,y=Result))
 
-test <- p + geom_jitter(
-    #color = '#0066ff',
+p <- p + geom_jitter(
+    color = '#0066ff',
     alpha = 0.4,
     width = 0.4,
-    #aes(size = NearStreamDistance)
-    aes(color = Category, size = NearStreamDistance)
+
   ) +
-  geom_boxplot(
-  color = '#000066',
-  alpha = 0.5,
-  outlier.shape = NA,
-  outlier.colour = 'black'
-  ) + 
+   geom_boxplot(
+   color = '#000066',
+   alpha = 0.5,
+   outlier.shape = NA,
+   outlier.colour = 'black'
+   ) + 
   # geom_violin(
-  #   alpha = 0.7,
-  #   draw_quantiles = c(0.1,0.25,0.5,0.75,0.9),
-  #   linetype = 'solid'
-  # ) +
+  #    alpha = 0.7,
+  #    draw_quantiles = c(0.1,0.25,0.5,0.75,0.9),
+  #    linetype = 'solid'
+  #  ) +
   geom_segment(
     x = 0.65, xend = 1.35, y = 45, yend = 45,
     color = 'red',linetype = 'dashed'
