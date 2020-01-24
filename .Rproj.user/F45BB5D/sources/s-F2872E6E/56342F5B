@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1579804260026.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2740359955",
+    "id" : "56342F5B",
+    "lastKnownWriteTime" : 1579834034,
+    "last_content_update" : 1579834034173,
+    "path" : "~/Projects/BLM_graphs/graphs.R",
+    "project_path" : "graphs.R",
+    "properties" : {
+        "cursorPosition" : "90,8",
+        "scrollLine" : "76"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : true,
+    "source_window" : "",
+    "type" : "r_source"
+}
