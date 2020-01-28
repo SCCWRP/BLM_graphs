@@ -1,103 +1,74 @@
+# load required libraries
 library(tidyverse)
 library(ggplot2)
-library(plotly)
-library(readxl)
-library(beeswarm)
-load("data/blm_cats") # BLM Category Table
-load("data/blm_data") # BLM Data
-copper <- blm_data %>% dplyr::filter(Analyte == "Copper, Total")
 
-# separate to two groups to simulate two ecoregions
-group1 <- copper$StationCode[((length(copper$StationCode)/2) + 1):length(copper$StationCode)]
-group2 <- copper$StationCode[1:(length(copper$StationCode)/2)]
+# ---------------------------------------------------------------------------------
+# Load in data
+# TODO: Verify that this is the most up-to-date data
+data <- read.csv("data/FW BLM Database Ecoregion.csv", header = TRUE)
 
-copper <- copper %>%
-  dplyr::mutate(
-    group = dplyr::case_when(
-      StationCode %in% group1 ~ "group1",
-      TRUE ~ "group2"
-    )
-  ) %>%
-  dplyr::mutate(
-    EPA_Estimate = dplyr::case_when(
-      group == 'group1' ~ 45,
-      group == 'group2' ~ 15,
-      TRUE ~ NA_real_
-    )
-  )
+# List of all analytes
+analytes = unique(data$SimplifiedAnalyteName)
 
-copper <- copper %>%
-  dplyr::group_by(group) %>%
-  dplyr::mutate(
-    `10th percentile` = quantile(Result, probs = 0.1)['10%'],
-    `25th percentile` = quantile(Result)['25%'],
-    `median` = quantile(Result)['50%'],
-    `75th percentile` = quantile(Result)['75%'],
-    `90th percentile` = quantile(Result, probs = 0.9)['90%'],
-    IQR = `75th percentile` - `25th percentile`
-  )
-copper_no_outliers <- copper %>%
-  dplyr::mutate(
-    Result = dplyr::case_when(
-      Result < `25th percentile` - (1.5 * IQR) ~ NA_real_,
-      Result > `75th percentile` + (1.5 * IQR) ~ NA_real_,
-      TRUE ~ Result
-    )
-  ) %>%
-  dplyr::filter(
-    !is.na(Result)
-  )
+# List of all ecoregions
+ecoregions = unique(data$US_L3CODE)
 
+# EPA Estimate Values
+# TODO: Will need to get these values from Ashley
+EPA_est = 100
 
+# define the summary function
+## This function ensures we compute the correct percentiles
+f <- function(x) {
+  r <- quantile(x, probs = c(0.10, 0.25, 0.5, 0.75, 0.90))
+  names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
+  r
+}
 
+# define graphing function
+## This function "cleans" the data and creates the appropriate box plots
+# TODO: Talk to Ashley about the y-axis limits. There are some outliers that throw off the scale.
+# TODO: Talk to Ashley about the units for pH. We may need to manually go in and get rid of "None"
+graphEco <- function(analyte, EPA_est){
+  data <- data %>%
+    dplyr::filter(SimplifiedAnalyteName == analyte) %>%
+    # filter out any values for ecoregions that are not 8 or 85
+    dplyr::filter(US_L3CODE == c(8, 85)) %>%
+  dplyr::mutate(US_L3CODE = as.character(US_L3CODE))
 
-copper_results_g1 = copper[which(copper$group == 'group1'),]$Result
-copper_results_g2 = copper[which(copper$group == 'group2'),]$Result
-
-p <- ggplot(copper_no_outliers, aes(x=group,y=Result))
-
-p <- p + geom_jitter(
-    color = '#0066ff',
-    alpha = 0.4,
-    width = 0.4,
-
-  ) +
-   geom_boxplot(
-   color = '#000066',
-   alpha = 0.5,
-   outlier.shape = NA,
-   outlier.colour = 'black'
-   ) + 
-  # geom_violin(
-  #    alpha = 0.7,
-  #    draw_quantiles = c(0.1,0.25,0.5,0.75,0.9),
-  #    linetype = 'solid'
-  #  ) +
-  geom_segment(
-    x = 0.65, xend = 1.35, y = 45, yend = 45,
-    color = 'red',linetype = 'dashed'
-  ) +
-  geom_segment(
-    x = 1.6, xend = 2.4, y = 15, yend = 15,
-    color = 'red',linetype = 'dashed'
-  )
-  
+  # create box plot
+  p <- ggplot(data, aes(x = US_L3CODE, y = Result)) + stat_summary(fun.data = f, geom="boxplot") + 
+    stat_boxplot(geom = "errorbar", width = 0.4) +
+    geom_jitter(
+      color = '#0066ff',
+      alpha = 0.4,
+      width = 0.4
+    ) + labs(x = "US EPA Level III Ecoregion",
+             y = paste(analyte, "(", data$Unit[2], ")")) + 
+    theme(text = element_text(size = 20)) + 
+    # change the values y and yend to the appropriate EPA Estimate Values
+    geom_segment(
+      x = 0.65, xend = 1.35, y = EPA_est, yend = EPA_est, size = 1,
+      color = 'red',linetype = 'dashed'
+    ) +
+    # change the values y and yend to the appropriate EPA Estimate Values
+    geom_segment(
+      x = 1.6, xend = 2.4, y = EPA_est, yend = EPA_est, size = 1,
+      color = 'red',linetype = 'dashed'
+    ) # + ylim(#min, #max) <This is the code to "crop" the y-axis
+}
 
 
-violin <- p + geom_violin()
+# Create plots for all analytes of interest
+for(analyte in analytes){
+  plotEco <- graphEco(analyte, EPA_est)
+  print(plotEco)
+}
 
-pl <- ggplotly(p)
 
-plotly_test <- plot_ly(
-  y = ~copper_10to90[which(copper_10to90$group == 'group1'),]$Result,
-  type = 'box',
-  boxpoints = 'all',
-  jitter = 0.3
-) %>%
-add_trace(
-  y = ~copper_10to90[which(copper_10to90$group == 'group2'),]$Result,
-  boxpoints = T
-)
+
+
+
 
 
 
