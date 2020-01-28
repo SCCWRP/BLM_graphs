@@ -5,7 +5,13 @@ library(ggplot2)
 # ---------------------------------------------------------------------------------
 # Load in data
 # TODO: Verify that this is the most up-to-date data
-data <- read.csv("data/FW BLM Database Ecoregion.csv", header = TRUE)
+data <- read.csv("data/FW BLM Database Ecoregion.csv", header = TRUE) %>%
+  mutate(
+    SimplifiedAnalyteName = as.character(SimplifiedAnalyteName)
+  ) %>% 
+  filter(Result > 0) %>%
+  filter(!((Result > 15) & (SimplifiedAnalyteName == 'pH')))
+
 
 # List of all analytes
 analytes = unique(data$SimplifiedAnalyteName)
@@ -14,8 +20,33 @@ analytes = unique(data$SimplifiedAnalyteName)
 ecoregions = unique(data$US_L3CODE)
 
 # EPA Estimate Values
-# TODO: Will need to get these values from Ashley
-EPA_est = 100
+# We will list the values in the following order:
+# Conductvity, Calcium, Magnesium, Sodium, Potassium, Alkalinity, 
+# Chloride, Sulfate, Hardness, DOC, pH, Temperature
+analytenames <- c('Conductivity', 'Calcium', 'Magnesium', 'Sodium', 
+                  'Potassium', 'Alkalinity', 'Chloride', 'Sulfate', 
+                  'Hardness', 'DOC', 'Copper', 'pH', 'Temperature')
+
+#ER8_Est = EcoRegion 8 Estimates
+ER8_Est <- c(772.0,63.0,25.0,63.0,3.8,150.0,54.0,171.0,260.0,0.7,NA_real_,NA_real_,NA_real_) 
+names(ER8_Est) <- analytenames
+
+#ER85_Est = EcoRegion 85 Estimates
+ER85_Est <- c(600.8,35.7,14.7,53.4,3.1,84.7,60.6,99.0,150.0,NA_real_,NA_real_,NA_real_,NA_real_)
+names(ER85_Est) <- analytenames
+
+# upper/lower boundaries for the zoomed in graphs.
+# I wanted to hard code it for each, since doing it by percentile might not always give us what we want
+upper_bounds = c(
+  NA_real_,500,500,400,70,600,1250,2500,3000,30,100,12,40
+)
+names(upper_bounds) <- analytenames
+
+lower_bounds = c(
+  NA_real_,0,0,0,0,0,0,0,0,0,0,4.5,0
+)
+names(lower_bounds) <- analytenames
+
 
 # define the summary function
 ## This function ensures we compute the correct percentiles
@@ -29,39 +60,54 @@ f <- function(x) {
 ## This function "cleans" the data and creates the appropriate box plots
 # TODO: Talk to Ashley about the y-axis limits. There are some outliers that throw off the scale.
 # TODO: Talk to Ashley about the units for pH. We may need to manually go in and get rid of "None"
-graphEco <- function(analyte, EPA_est){
+graphEco <- function(data, analyte){
+  
   data <- data %>%
     dplyr::filter(SimplifiedAnalyteName == analyte) %>%
     # filter out any values for ecoregions that are not 8 or 85
-    dplyr::filter(US_L3CODE == c(8, 85)) %>%
-  dplyr::mutate(US_L3CODE = as.character(US_L3CODE))
+    dplyr::filter(US_L3CODE %in% c(8, 85)) %>%
+    dplyr::mutate(US_L3CODE = as.character(US_L3CODE))
 
   # create box plot
   p <- ggplot(data, aes(x = US_L3CODE, y = Result)) + stat_summary(fun.data = f, geom="boxplot") + 
     stat_boxplot(geom = "errorbar", width = 0.4) +
     geom_jitter(
       color = '#0066ff',
-      alpha = 0.4,
+      alpha = 0.3,
       width = 0.4
     ) + labs(x = "US EPA Level III Ecoregion",
-             y = paste(analyte, "(", data$Unit[2], ")")) + 
+             y = paste(
+                  analyte, 
+                  ifelse(
+                    data$Unit[2] != 'none', 
+                    paste("(",data$Unit[2],")"), 
+                    ""
+                  ) 
+                )
+             ) + 
     theme(text = element_text(size = 20)) + 
     # change the values y and yend to the appropriate EPA Estimate Values
     geom_segment(
-      x = 0.65, xend = 1.35, y = EPA_est, yend = EPA_est, size = 1,
+      x = 0.65, xend = 1.35, y = ER8_Est[[analyte]], yend = ER8_Est[[analyte]], size = 1,
       color = 'red',linetype = 'dashed'
     ) +
     # change the values y and yend to the appropriate EPA Estimate Values
     geom_segment(
-      x = 1.6, xend = 2.4, y = EPA_est, yend = EPA_est, size = 1,
+      x = 1.6, xend = 2.4, y = ER85_Est[[analyte]], yend = ER85_Est[[analyte]], size = 1,
       color = 'red',linetype = 'dashed'
-    ) # + ylim(#min, #max) <This is the code to "crop" the y-axis
+    ) #+ ylim(0, 2000) #<This is the code to "crop" the y-axis
+  p_cropped <- p + ylim(lower_bounds[[analyte]],upper_bounds[[analyte]])
+  
+  # Export the plots to photos
+  ggsave(paste0("plots/",analyte,".jpg"), plot = p, device = NULL)
+  ggsave(paste0("plots/",analyte,"-zoomed.jpg"), plot = p_cropped, device = NULL)
 }
 
 
 # Create plots for all analytes of interest
 for(analyte in analytes){
-  plotEco <- graphEco(analyte, EPA_est)
+  print(analyte)
+  plotEco <- graphEco(data, analyte)
   print(plotEco)
 }
 
