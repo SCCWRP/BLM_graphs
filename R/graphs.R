@@ -72,39 +72,13 @@ graphEco <- function(data, analyte){
   # For the sake of having the horizontal lines on the ends of the boxplot.
   # without having them end up as the same exact thing........
   # yes, this is not best practice, but I can't think of an easier way to get this thing done
-  # We don't quite have time to figure out the more elegant solution at this moment
-  ER85_10pct <- ((data %>% filter(US_L3CODE == 85))$Result %>% quantile(c(.1)))[['10%']]
-  ER85_90pct <- ((data %>% filter(US_L3CODE == 85))$Result %>% quantile(c(.9)))[['90%']]
-  
-  ER8_10pct <- ((data %>% filter(US_L3CODE == 8))$Result %>% quantile(c(.1)))[['10%']]
-  ER8_90pct <- ((data %>% filter(US_L3CODE == 8))$Result %>% quantile(c(.9)))[['90%']]
   
   
   # create box plot
   p <- ggplot(data, aes(x = US_L3CODE, y = Result)) + stat_summary(fun.data = f, geom="boxplot") + 
-    geom_segment(
-      # For the EcoRegion 8 graph
-      x = 0.9, xend = 1.1, y = ER8_10pct, yend = ER8_10pct, size = 1,
-      color = 'black',linetype = 'solid'
-    ) +
-    geom_segment(
-      # For the EcoRegion 8 graph
-      x = 0.9, xend = 1.1, y = ER8_90pct, yend = ER8_90pct, size = 1,
-      color = 'black',linetype = 'solid'
-    ) +
-    geom_segment(
-      # For the EcoRegion 85 graph
-      x = 1.9, xend = 2.1, y = ER85_10pct, yend = ER85_10pct, size = 1,
-      color = 'black',linetype = 'solid'
-    ) +
-    geom_segment(
-      # For the EcoRegion 85 graph
-      x = 1.9, xend = 2.1, y = ER85_90pct, yend = ER85_90pct, size = 1,
-      color = 'black',linetype = 'solid'
-    ) +
-    geom_jitter(
+      geom_jitter(
       color = '#0066ff',
-      alpha = 0.3,
+      alpha = 0.2,
       width = 0.4
     ) + labs(x = "US EPA Level III Ecoregion",
              y = paste(
