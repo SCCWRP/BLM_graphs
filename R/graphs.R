@@ -9,7 +9,7 @@ data <- read.csv("data/FW BLM Database Ecoregion.csv", header = TRUE) %>%
   mutate(
     SimplifiedAnalyteName = as.character(SimplifiedAnalyteName)
   ) %>% 
-  filter(Result > 0) %>%
+  filter(Result >= 0) %>%
   filter(!((Result > 15) & (SimplifiedAnalyteName == 'pH')))
 
 
@@ -68,9 +68,14 @@ graphEco <- function(data, analyte){
     dplyr::filter(US_L3CODE %in% c(8, 85)) %>%
     dplyr::mutate(US_L3CODE = as.character(US_L3CODE))
 
+  mark_percentile <- function(data, percentile)
+  {
+    char_pct <- (percentile * 100) %>% as.character()
+    
+  }
+  
   # create box plot
   p <- ggplot(data, aes(x = US_L3CODE, y = Result)) + stat_summary(fun.data = f, geom="boxplot") + 
-    stat_boxplot(geom = "errorbar", width = 0.4) +
     geom_jitter(
       color = '#0066ff',
       alpha = 0.3,
